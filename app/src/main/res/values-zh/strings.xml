@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">云端启动器</string>
+    <string name="dialog_confirm">确认</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="dialog_alert_title">提示</string>
+    <string name="dialog_confirm_title">你确定吗?</string>
+    <string name="dialog_prompt_title">输入</string>
+    <string name="text_permission_request">你要授予 {{origin}} 的 {{name}} 权限吗?</string>
+    <string name="text_input_server_port">请输入服务器端口号 (10000~65535):</string>
+    <string name="text_input_home_page">请输入主页 URL (https://example.com):</string>
+    <string name="text_config_saved_restart">配置已保存, 重启桌面应用配置.</string>
+    <string name="text_config_saved">配置已保存.</string>
+    <string name="text_config_failed">配置失败, 请检查输入内容.</string>
+    <string name="text_server_start_failed">桌面服务启动失败, 请尝试修改服务器端口号.</string>
+    <string name="word_permission_launcher">启动器</string>
+    <string name="word_permission_unknown">未知</string>
+    <string name="button_set_home_page">设置主页</string>
+    <string name="button_set_server_port">设置服务器端口号</string>
+    <string name="button_reset_permission">重置所有网站的权限</string>
+    <string name="button_restart_app">重启启动器</string>
+</resources>

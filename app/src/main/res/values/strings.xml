@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Web Launcher</string>
+    <string name="dialog_confirm">Confirm</string>
+    <string name="dialog_cancel">Cancel</string>
+    <string name="dialog_alert_title">Alert</string>
+    <string name="dialog_confirm_title">Are you sure?</string>
+    <string name="dialog_prompt_title">Input</string>
+    <string name="text_permission_request">Do you want to grant {{name}} permission to {{origin}}?</string>
+    <string name="text_input_server_port">Please input server port number (10000~65535):</string>
+    <string name="text_input_home_page">Please input home page URL (https://example.com):</string>
+    <string name="text_config_saved_restart">Config saved, restart to apply change.</string>
+    <string name="text_config_saved">Config saved.</string>
+    <string name="text_config_failed">Config failed, please check your input.</string>
+    <string name="text_server_start_failed">Failed to start launcher server, please change the server port and try again.</string>
+    <string name="word_permission_launcher">Launcher</string>
+    <string name="word_permission_unknown">Unknown</string>
+    <string name="button_set_home_page">Set home page</string>
+    <string name="button_set_server_port">Set server port</string>
+    <string name="button_reset_permission">Reset all permissions</string>
+    <string name="button_restart_app">Restart launcher</string>
+</resources>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <script src="js/zepto.min.js" ></script>
+        <script src="js/3dspace.js" ></script>
+        <script src="js/bgspace.js"></script>
+        <script src="js/vconsole.min.js"></script>
+        <script src="js/launcher.js"></script>
+        <script>
+          // init vConsole
+          var vConsole = new VConsole();
+          // console.log('Hello world');
+          let api = new Launcher();
+          function jump(){
+            let href = "simple.html" + window.location.search;
+            window.location = href;
+          }
+          console.log(navigator.userAgent);
+        </script>
+		<title>Launcher</title>
+        <style>
+        .black p,.black h1,.black h2,.black div {
+            color: white;
+        }
+        .black a {
+            color: aqua;
+        }
+        .black hr {
+            background-color: white;
+        }
+        .black h1 {
+            margin: 0;
+        }
+        body,html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #bg-canvas {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            z-index: -999;
+        }
+        </style>
+    </head>
+    <body class="black">
+        <canvas id="bg-canvas" data-fg-color="#A0FFFF"></canvas>
+        <h1>Launcher Test</h1>
+        <p>&lt;- This is default page.</p>
+        <p>&lt;- Change it from menu at left. (slide it out)</p>
+        <p>&lt;- This is a browser, but not support _blank target and more than one windows</p>
+        <p>&lt;- 这个桌面基本上就是一个浏览器，但是不支持多窗口。</p>
+        <p>support HTTPS only 只支持HTTPS协议. e.g: <br/><a href="http://httpbin.org/get">http://httpbin.org/get</a></p>
+        <br/>
+        <a href="https://cn.bing.com">Bing Search</a><br/><br/>
+        <a href="https://cn.bing.com/fun/">Play Some Games</a>
+        <hr style="margin-top:1em;">
+        <a href="#" onclick="jump()">Simple launcher page 一个简单的桌面例子</a>
+        <div style="height:1em;"></div>
+        <a href="source.html">^Simple launcher page source code^ 源代码</a>
+        <hr style="margin-top:1em;">
+        <p>For development 开发者工具包见: <a href="https://github.com/Dreagonmon/web-launcher">https://github.com/Dreagonmon/web-launcher</a></p>
+        <p>An example 一个例子: <a href="https://dreagonmon.github.io/paper-desktop/">https://github.com/Dreagonmon/paper-desktop</a></p>
+    </body>
+</html>
