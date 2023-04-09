@@ -3,8 +3,6 @@ package top.dreagonmon.app.dreamoonlauncher.control;
 import android.content.Context;
 import android.content.SharedPreferences;
 
-import java.util.UUID;
-
 import top.dreagonmon.app.dreamoonlauncher.MainActivity;
 
 public class ConfigControl {

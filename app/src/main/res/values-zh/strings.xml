@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">云端启动器</string>
+    <string name="app_name">云端启动器 (概念版)</string>
     <string name="dialog_confirm">确认</string>
     <string name="dialog_cancel">取消</string>
     <string name="dialog_alert_title">提示</string>

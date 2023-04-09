@@ -1,15 +1,10 @@
 package top.dreagonmon.app.dreamoonlauncher.server;
 
 import android.app.AlertDialog;
-import android.util.Log;
+
+import org.nanohttpd.protocols.http.NanoHTTPD;
 
 import java.io.IOException;
-import java.util.Map;
-
-import org.nanohttpd.protocols.http.IHTTPSession;
-import org.nanohttpd.protocols.http.NanoHTTPD;
-import org.nanohttpd.protocols.http.response.Response;
-import org.nanohttpd.util.IHandler;
 
 import top.dreagonmon.app.dreamoonlauncher.MainActivity;
 import top.dreagonmon.app.dreamoonlauncher.R;

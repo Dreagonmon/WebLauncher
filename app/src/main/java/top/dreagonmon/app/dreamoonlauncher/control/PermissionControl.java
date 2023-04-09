@@ -7,8 +7,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-
 import top.dreagonmon.app.dreamoonlauncher.MainActivity;
 import top.dreagonmon.app.dreamoonlauncher.R;
 import top.dreagonmon.app.dreamoonlauncher.window.SubThreadDialogWindow;

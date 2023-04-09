@@ -1,7 +1,6 @@
 package top.dreagonmon.app.dreamoonlauncher.window;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.graphics.Color;
 import android.net.http.SslError;
 import android.webkit.SslErrorHandler;

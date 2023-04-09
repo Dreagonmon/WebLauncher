@@ -2,47 +2,25 @@ package top.dreagonmon.app.dreamoonlauncher;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.SparseArray;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.os.Handler;
-import android.os.Message;
-import android.util.Log;
-import android.util.SparseArray;
-import android.util.SparseIntArray;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.FrameLayout;
-import android.widget.ListView;
-import android.widget.SimpleAdapter;
-import android.widget.TextView;
-
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import top.dreagonmon.app.dreamoonlauncher.control.ActivityResultCallback;
 import top.dreagonmon.app.dreamoonlauncher.control.ConfigControl;
-import top.dreagonmon.app.dreamoonlauncher.control.LauncherControl;
 import top.dreagonmon.app.dreamoonlauncher.control.PermissionControl;
 import top.dreagonmon.app.dreamoonlauncher.control.SidebarControl;
 import top.dreagonmon.app.dreamoonlauncher.server.LauncherServer;
 import top.dreagonmon.app.dreamoonlauncher.utils.GlobalStorage;
-import top.dreagonmon.app.dreamoonlauncher.utils.SSLHelper;
-import top.dreagonmon.app.dreamoonlauncher.window.FloatWindow;
-import top.dreagonmon.app.dreamoonlauncher.window.SubThreadDialogWindow;
 import top.dreagonmon.app.dreamoonlauncher.window.WebViewWindow;
 
 /**
@@ -62,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         this.handler = new MainHandler();
         this.global = new GlobalStorage();
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
         // init global object

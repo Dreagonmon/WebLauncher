@@ -1,14 +1,8 @@
 package top.dreagonmon.app.dreamoonlauncher.window;
 
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.os.Handler;
-import android.os.Message;
 import android.widget.EditText;
-
-import androidx.annotation.NonNull;
 
 import top.dreagonmon.app.dreamoonlauncher.MainActivity;
 import top.dreagonmon.app.dreamoonlauncher.R;
