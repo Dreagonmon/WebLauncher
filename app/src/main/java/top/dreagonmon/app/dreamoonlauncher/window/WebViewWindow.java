@@ -1,16 +1,11 @@
 package top.dreagonmon.app.dreamoonlauncher.window;
 
 import android.annotation.SuppressLint;
+import android.content.pm.ApplicationInfo;
 import android.graphics.Color;
-import android.net.http.SslError;
-import android.webkit.SslErrorHandler;
-import android.webkit.WebResourceRequest;
+import android.webkit.ServiceWorkerController;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
-
-import java.net.MalformedURLException;
-import java.net.URL;
 
 import top.dreagonmon.app.dreamoonlauncher.BuildConfig;
 import top.dreagonmon.app.dreamoonlauncher.MainActivity;
@@ -30,26 +25,7 @@ public class WebViewWindow {
     private void config(WebView web, MainActivity viewContext){
         web.setBackgroundColor(Color.TRANSPARENT);
         // Handle URL Loading
-        web.setWebViewClient(new WebViewClient(){
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                return false;//Allow all url
-            }
-            @Override
-            public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-                // Allow Localhost https
-                try {
-                    URL url = new URL(error.getUrl());
-                    if ("127.0.0.1".equals(url.getHost()) || "localhost".equals(url.getHost())){
-                        handler.proceed();
-                        return;
-                    }
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                }
-                handler.cancel();
-            }
-        });
+        web.setWebViewClient(new AppWebViewClient());
         // Handle Browser Event
         web.setWebChromeClient(browserCore);
         // Enable Image and JavaScript
@@ -60,6 +36,7 @@ public class WebViewWindow {
         setting.setJavaScriptEnabled(true);
         setting.setJavaScriptCanOpenWindowsAutomatically(true);
         setting.setSupportMultipleWindows(true);
+        // Set User Agent
         String ua = setting.getUserAgentString();
         ua = String.format("%1$s WebLauncher/%2$s (port %3$s)",
                 ua,
@@ -67,6 +44,12 @@ public class WebViewWindow {
                 viewContext.getGlobalStorage().configControl.getServerPort()
         );
         setting.setUserAgentString(ua);
+        // Allow Service Worker Rewrite Fetch
+        ServiceWorkerController.getInstance().setServiceWorkerClient(new AppServiceWorkerClient());
+        // Enable WebView Debug
+        if (0 != (viewContext.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE)){
+            WebView.setWebContentsDebuggingEnabled(true);
+        }
     }
 
     /*get WebView*/
