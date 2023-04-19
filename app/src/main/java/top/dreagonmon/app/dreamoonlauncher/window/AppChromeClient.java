@@ -1,4 +1,4 @@
-package top.dreagonmon.app.dreamoonlauncher.control;
+package top.dreagonmon.app.dreamoonlauncher.window;
 
 import android.content.Context;
 import android.content.Intent;
@@ -10,11 +10,12 @@ import android.webkit.WebView;
 import androidx.annotation.Nullable;
 
 import top.dreagonmon.app.dreamoonlauncher.MainActivity;
+import top.dreagonmon.app.dreamoonlauncher.control.ActivityResultCallback;
 
-public class ChromeClient extends WebChromeClient {
+public class AppChromeClient extends WebChromeClient {
     private final int REQUEST_PICK_FILE = 0x10;
     private final MainActivity viewContext;
-    public ChromeClient(Context viewContext){
+    public AppChromeClient(Context viewContext){
         this.viewContext = (MainActivity) viewContext;
     }
 
@@ -26,7 +27,7 @@ public class ChromeClient extends WebChromeClient {
         return true;
     }
 
-    private class FileChooseCallback implements ActivityResultCallback{
+    private class FileChooseCallback implements ActivityResultCallback {
         private final ValueCallback<Uri[]> filePathCallback;
         public FileChooseCallback(ValueCallback<Uri[]> filePathCallback){
             this.filePathCallback = filePathCallback;

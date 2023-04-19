@@ -9,13 +9,10 @@ import android.webkit.WebView;
 
 import top.dreagonmon.app.dreamoonlauncher.BuildConfig;
 import top.dreagonmon.app.dreamoonlauncher.MainActivity;
-import top.dreagonmon.app.dreamoonlauncher.control.ChromeClient;
 
 public class WebViewWindow {
-    private final ChromeClient browserCore;
     private WebView web;
     public WebViewWindow(MainActivity viewContext) {
-        this.browserCore = new ChromeClient(viewContext);
         this.web = new WebView(viewContext);
         config(this.web, viewContext);
     }
@@ -27,7 +24,7 @@ public class WebViewWindow {
         // Handle URL Loading
         web.setWebViewClient(new AppWebViewClient());
         // Handle Browser Event
-        web.setWebChromeClient(browserCore);
+        web.setWebChromeClient(new AppChromeClient(viewContext));
         // Enable Image and JavaScript
         WebSettings setting = web.getSettings();
         setting.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
