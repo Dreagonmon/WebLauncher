@@ -36,6 +36,8 @@ public class WebViewWindow {
         setting.setJavaScriptEnabled(true);
         setting.setJavaScriptCanOpenWindowsAutomatically(true);
         setting.setSupportMultipleWindows(true);
+        setting.setDomStorageEnabled(true);
+        setting.setDatabaseEnabled(true);
         // Set User Agent
         String ua = setting.getUserAgentString();
         ua = String.format("%1$s WebLauncher/%2$s (port %3$s)",
