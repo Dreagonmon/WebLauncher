@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,12 @@ public class LauncherControl {
         Intent intent = new Intent();
         intent.setComponent(new ComponentName(packageName, activityName));
         viewContext.startActivity(intent);
+    }
+    public void openWebpage(String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+        if (intent.resolveActivity(this.viewContext.getPackageManager()) != null) {
+            this.viewContext.startActivity(intent);
+        }
     }
     public Drawable getActivityIcon(String packageName, String activityName) {
         PackageManager pm = this.viewContext.getPackageManager();

@@ -103,6 +103,8 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
                     return doGetApplicationIcon(session);
                 case "launch":
                     return doLaunchApplication(session);
+                case "open-webpage":
+                    return doOpenWebpage(session);
                 case "request-permission":
                     return doRequestPermission(session);
             }
@@ -161,6 +163,15 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
         String packageName = params.get("package").get(0);
         String activityName = params.get("activity").get(0);
         control.launchApplication(packageName, activityName);
+        return RSP_200();
+    }
+    private Response doOpenWebpage(IHTTPSession session){
+        if (!hasPermission(PermissionControl.PERMISSION_LAUNCHER, session)){
+            return RSP_403();
+        }
+        Map<String, List<String>> params = session.getParameters();
+        String href = params.get("href").get(0);
+        control.openWebpage(href);
         return RSP_200();
     }
     private Response doRequestPermission(IHTTPSession session){

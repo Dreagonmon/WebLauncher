@@ -240,6 +240,19 @@ class Launcher {
     return true;
   };
 
+  openWebpage = async (url) => {
+      if (this.server) {
+        window.open(url, "_blank");
+        return true;
+      }
+      const mURL = `${this.address}open-webpage?href=${encodeURIComponent(url)}&t=${new Date().getTime()}`;
+      const resp = await fetch(mURL);
+      if (resp.status !== 200) {
+        return Promise.reject(new LauncherResponseError("status code not 200!"));
+      }
+      return true;
+    };
+
   requestPermission = async (name) => {
     if (this.server) {
       return await this.server.requestPermission(name);

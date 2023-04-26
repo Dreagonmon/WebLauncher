@@ -36,12 +36,16 @@
         document.body.appendChild(br);
       }
     };
+    window.openBing = async () => {
+      await api.openWebpage("https://cn.bing.com");
+    };
   </script>
 </head>
 
 <body>
   <h1>Launcher Test</h1>
   <p>&lt;- This is the simple page.</p>
+  <a href="#" onclick="openBing()">Open Bing Search in Browser</a><br/><br/>
   <hr>
   <h2>App List</h2>
   <hr>
