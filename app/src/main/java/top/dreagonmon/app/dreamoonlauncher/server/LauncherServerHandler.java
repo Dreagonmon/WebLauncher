@@ -104,6 +104,28 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
     private Response RSP_403(){
         return Response.newFixedLengthResponse(Status.FORBIDDEN,"text/plain","403 Forbidden");
     }
+    private Response RSP_405(){
+        return Response.newFixedLengthResponse(Status.METHOD_NOT_ALLOWED,"text/plain","405 Method Not Allowed");
+    }
+
+    /** Parse the JSON request body of a POST. handle() runs before the
+     *  framework parses the body, so we trigger parseBody ourselves: for
+     *  non-form content types NanoHTTPD stores the raw body under the
+     *  "postData" key (IHTTPSession.POST_DATA). */
+    private JSONObject jsonBody(IHTTPSession session) throws Exception {
+        java.util.Map<String, String> files = new java.util.HashMap<>();
+        session.parseBody(files);
+        String raw = files.get("postData"); // HTTPSession.POST_DATA
+        if (raw == null || raw.isEmpty()) {
+            throw new IllegalArgumentException("empty JSON body");
+        }
+        return new JSONObject(raw);
+    }
+    private static String jsonStr(JSONObject body, String key) throws JSONException {
+        String v = body.optString(key, null);
+        if (v == null) throw new IllegalArgumentException("missing field: " + key);
+        return v;
+    }
     private Response RSP_500(){
         return Response.newFixedLengthResponse(Status.INTERNAL_ERROR,"text/plain","500 Internal Server Error");
     }
@@ -122,16 +144,23 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
             return serveAsset(session);
         }
         try {
+            boolean isPost = session.getMethod().toString().toLowerCase().equals("post");
             switch (path[2]) {
                 case "app-list-all":
                     return doGetApplicationList(session);
                 case "icon":
                     return doGetApplicationIcon(session);
                 case "launch":
+                    // action endpoints are POST-only: GET-with-side-effect
+                    // is unsafe by spec, and POST fetch always carries an
+                    // Origin header, keeping auth attribution honest
+                    if (!isPost) return RSP_405();
                     return doLaunchApplication(session);
                 case "open-webpage":
+                    if (!isPost) return RSP_405();
                     return doOpenWebpage(session);
                 case "request-permission":
+                    if (!isPost) return RSP_405();
                     return doRequestPermission(session);
             }
         }catch (Exception e){
@@ -209,6 +238,10 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
             size = ICON_SIZE;
         }
         Drawable dw = control.getActivityIcon(packageName, activityName);
+        if (dw == null){
+            // 图标解析失败（个别系统应用 alias/隐藏组件）：404 而非 500
+            return RSP_404();
+        }
         Bitmap icon = Bitmap.createBitmap(size,size, Bitmap.Config.ARGB_8888);
         Canvas cv = new Canvas(icon);
         icon.prepareToDraw();
@@ -219,33 +252,35 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
         byte[] data = bos.toByteArray();
         return Response.newFixedLengthResponse(Status.OK, "image/png", data);
     }
-    private Response doLaunchApplication(IHTTPSession session){
+    private Response doLaunchApplication(IHTTPSession session) throws Exception {
         if (!hasPermission(PermissionControl.PERMISSION_LAUNCHER, session)){
             return RSP_403();
         }
-        Map<String, List<String>> params = session.getParameters();
-        String packageName = params.get("package").get(0);
-        String activityName = params.get("activity").get(0);
-        control.launchApplication(packageName, activityName);
+        JSONObject body = jsonBody(session);
+        String packageName = jsonStr(body, "package");
+        String activityName = jsonStr(body, "activity");
+        if (!control.launchApplication(packageName, activityName)){
+            return RSP_500();
+        }
         return RSP_200();
     }
-    private Response doOpenWebpage(IHTTPSession session){
+    private Response doOpenWebpage(IHTTPSession session) throws Exception {
         if (!hasPermission(PermissionControl.PERMISSION_LAUNCHER, session)){
             return RSP_403();
         }
-        Map<String, List<String>> params = session.getParameters();
-        String href = params.get("href").get(0);
+        JSONObject body = jsonBody(session);
+        String href = jsonStr(body, "href");
         control.openWebpage(href);
         return RSP_200();
     }
-    private Response doRequestPermission(IHTTPSession session){
+    private Response doRequestPermission(IHTTPSession session) throws Exception {
         // 同样要求 X-Requested-With，否则 no-cors/img 可无头触发授权弹窗骚扰
         String xrw = session.getHeaders().get("x-requested-with");
         if (!"WebLauncher".equals(xrw)){
             return RSP_403();
         }
-        Map<String, List<String>> params = session.getParameters();
-        String name = params.get("name").get(0);
+        JSONObject body = jsonBody(session);
+        String name = jsonStr(body, "name");
         String origin = resolveOrigin(session);
         Log.d("server", "request-permission name=" + name + " origin=" + origin);
         top.dreagonmon.app.dreamoonlauncher.utils.FileLog.write(

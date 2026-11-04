@@ -233,8 +233,15 @@ class Launcher {
     if (this.server) {
       return await this.server.launchApplication(packageName, activity);
     }
-    const url = `${this.address}launch?package=${packageName}&activity=${activity}&t=${new Date().getTime()}`;
-    const resp = await fetch(url, { headers: { "X-Requested-With": "WebLauncher" } });
+    const url = `${this.address}launch`;
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-Requested-With": "WebLauncher",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ package: packageName, activity: activity }),
+    });
     if (resp.status !== 200) {
       return Promise.reject(new LauncherResponseError("status code not 200!"));
     }
@@ -246,8 +253,15 @@ class Launcher {
         window.open(url, "_blank");
         return true;
       }
-      const mURL = `${this.address}open-webpage?href=${encodeURIComponent(url)}&t=${new Date().getTime()}`;
-      const resp = await fetch(mURL, { headers: { "X-Requested-With": "WebLauncher" } });
+      const mURL = `${this.address}open-webpage`;
+      const resp = await fetch(mURL, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "WebLauncher",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ href: url }),
+      });
       if (resp.status !== 200) {
         return Promise.reject(new LauncherResponseError("status code not 200!"));
       }
@@ -258,8 +272,15 @@ class Launcher {
     if (this.server) {
       return await this.server.requestPermission(name);
     }
-    const url = `${this.address}request-permission?name=${name}&t=${new Date().getTime()}`;
-    const resp = await fetch(url, { headers: { "X-Requested-With": "WebLauncher" } });
+    const url = `${this.address}request-permission`;
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-Requested-With": "WebLauncher",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: name }),
+    });
     if (resp.status !== 200) {
       return Promise.reject(new LauncherResponseError("status code not 200!"));
     }
