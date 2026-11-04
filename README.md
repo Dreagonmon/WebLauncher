@@ -37,6 +37,11 @@ a small HTTP API (list apps, launch them, open webpages).
 
 Base URL: `https://127.0.0.1:<port>/api/`
 
+> **Client compatibility:** this protocol (POST + JSON action endpoints,
+> `X-Requested-With` header, icon token) matches
+> **`android-web-launcher` v0.4.0+**. Older client versions speak the legacy
+> GET protocol and will get `405`/`403` from current builds.
+
 ### Discovering the port
 
 The server port is user-configurable (default `10801`), so pages should not
