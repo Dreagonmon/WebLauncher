@@ -7,9 +7,24 @@
         <intent>
             <action android:name="android.intent.action.MAIN" />
         </intent>
+        <!-- 可见性声明：列出/启动桌面应用需要 MAIN+LAUNCHER 组合 -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+        <!-- openWebpage 用 ACTION_VIEW 打开 http/https 链接 -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
+        </intent>
     </queries>
 
     <application
+        android:name=".LauncherApp"
         android:networkSecurityConfig="@xml/network_security_config"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
