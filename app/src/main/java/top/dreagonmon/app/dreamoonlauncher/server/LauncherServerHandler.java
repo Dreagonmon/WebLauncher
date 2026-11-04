@@ -193,9 +193,13 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
         return Response.newFixedLengthResponse(Status.OK, "application/json", text);
     }
     private Response doGetApplicationIcon(IHTTPSession session) throws RuntimeException {
-        // icon don`t need permission
-        // TODO: require permission, and cache icon for better speed.
+        // icon 走 <img src>，带不了自定义头；用 requestPermission 下发的
+        // token 参数鉴权（token 与已授权 origin 绑定，见 PermissionControl）
         Map<String, List<String>> params = session.getParameters();
+        String token = params.containsKey("token") ? params.get("token").get(0) : null;
+        if (!getPermissionControl().hasToken(PermissionControl.PERMISSION_LAUNCHER, token)){
+            return RSP_403();
+        }
         String packageName = params.get("package").get(0);
         String activityName = params.get("activity").get(0);
         int size;
@@ -249,7 +253,10 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
         boolean result = getPermissionControl().requestPermission(name, origin);
         Log.d("server", String.valueOf(result));
         if (result) {
-            return RSP_200();
+            // 成功时 body 返回该 origin 的 token（旧客户端忽略 body，兼容）
+            String token = getPermissionControl().issueToken(name, origin);
+            return Response.newFixedLengthResponse(Status.OK, "text/plain",
+                    token == null ? "200 OK" : token);
         }else{
             return RSP_403();
         }

@@ -198,6 +198,7 @@ class Launcher {
     }
     this.port = port;
     this.server = undefined;
+    this.token = "";
     this.address = `${protocol}//127.0.0.1:${port}/api/`;
   };
 
@@ -225,7 +226,7 @@ class Launcher {
     if (this.server) {
       return this.server.getApplicationIconSrc(packageName, activity, size);
     }
-    return `${this.address}icon?package=${packageName}&activity=${activity}&size=${size}&t=${new Date().getTime()}`;
+    return `${this.address}icon?package=${packageName}&activity=${activity}&size=${size}&token=${this.token}&t=${new Date().getTime()}`;
   };
 
   launchApplication = async (packageName, activity) => {
@@ -262,6 +263,9 @@ class Launcher {
     if (resp.status !== 200) {
       return Promise.reject(new LauncherResponseError("status code not 200!"));
     }
+    // body 是 icon 鉴权用的 token（img 请求带不了自定义头）
+    this.token = (await resp.text()).trim();
+    if (this.token === "200 OK") this.token = ""; // 旧服务器无 token
     return true;
   };
 
