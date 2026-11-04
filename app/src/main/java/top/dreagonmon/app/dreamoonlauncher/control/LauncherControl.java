@@ -18,10 +18,25 @@ public class LauncherControl {
         this.viewContext = context;
     }
     /* launch application */
-    public void launchApplication(String packageName, String activityName){
-        Intent intent = new Intent();
+    public boolean launchApplication(String packageName, String activityName){
+        // 与真实桌面一致地构造 Intent：MIUI 等系统应用会检查 action/category，
+        // 光板 component-only Intent 会被拉起后自崩（如 HyperOS 计算器）
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
         intent.setComponent(new ComponentName(packageName, activityName));
-        viewContext.startActivity(intent);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+        try {
+            viewContext.startActivity(intent);
+            top.dreagonmon.app.dreamoonlauncher.utils.FileLog.write(
+                    viewContext, "launch ok " + packageName + "/" + activityName);
+            return true;
+        } catch (Exception e) {
+            // 个别系统应用（activity alias/未导出）从外部启动会抛异常
+            android.util.Log.w("LauncherControl", "launch failed " + packageName + "/" + activityName, e);
+            top.dreagonmon.app.dreamoonlauncher.utils.FileLog.write(
+                    viewContext, "launch failed " + packageName + "/" + activityName, e);
+            return false;
+        }
     }
     public void openWebpage(String url) {
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
@@ -31,10 +46,22 @@ public class LauncherControl {
     }
     public Drawable getActivityIcon(String packageName, String activityName) {
         PackageManager pm = this.viewContext.getPackageManager();
-        Intent intent = new Intent();
-        intent.setComponent(new ComponentName(packageName, activityName));
-        ResolveInfo resolveInfo = pm.resolveActivity(intent, 0);
-        return resolveInfo == null ? null : resolveInfo.loadIcon(pm);
+        // 逐级回退：activity 图标 → 应用图标 → null（调用方出 404）
+        try {
+            Intent intent = new Intent();
+            intent.setComponent(new ComponentName(packageName, activityName));
+            ResolveInfo resolveInfo = pm.resolveActivity(intent, 0);
+            if (resolveInfo != null) {
+                Drawable d = resolveInfo.loadIcon(pm);
+                if (d != null) return d;
+            }
+        } catch (Exception ignore) {
+        }
+        try {
+            return pm.getApplicationIcon(packageName);
+        } catch (Exception e) {
+            return null;
+        }
     }
     public List<ApplicationInfo> getApplicationList(){
         PackageManager pm = viewContext.getPackageManager();
