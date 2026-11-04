@@ -43,6 +43,17 @@
                 android:layout_height="1dp"
                 android:background="@android:color/white"/>
             <Button
+                android:id="@+id/side_btn_app_list_permission"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:background="@android:color/transparent"
+                android:textColor="@android:color/white"
+                android:text="@string/button_app_list_permission"/>
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@android:color/white"/>
+            <Button
                 android:id="@+id/side_btn_restart"
                 android:layout_width="match_parent"
                 android:layout_height="64dp"

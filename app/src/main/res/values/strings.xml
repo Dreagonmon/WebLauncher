@@ -17,5 +17,7 @@
     <string name="button_set_home_page">Set home page</string>
     <string name="button_set_server_port">Set server port</string>
     <string name="button_reset_permission">Reset all permissions</string>
+    <string name="button_app_list_permission">App list permission</string>
+    <string name="text_no_settings_page">Cannot open system settings</string>
     <string name="button_restart_app">Restart launcher</string>
 </resources>

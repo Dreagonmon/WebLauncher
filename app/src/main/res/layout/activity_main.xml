@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:id="@+id/drawer_layout">
 
     <FrameLayout
         android:layout_width="match_parent"
@@ -15,6 +16,16 @@
         android:layout_height="match_parent"
         android:id="@+id/launcher_container">
 
+        <!-- 左边缘抽屉把手：一小块渐隐阴影，显示 3 秒后淡出（onResume 重新计时）。
+             必须放在普通 FrameLayout 里：DrawerLayout 的直接子 View 的
+             layout_gravity 只允许 left/right（抽屉）或无（内容），
+             center_vertical 会在 measure 时抛 IllegalStateException -->
+        <View
+            android:id="@+id/drawer_handle"
+            android:layout_width="14dp"
+            android:layout_height="96dp"
+            android:layout_gravity="start|center_vertical"
+            android:background="@drawable/sidebar_handle_bg" />
     </FrameLayout>
 
     <FrameLayout
