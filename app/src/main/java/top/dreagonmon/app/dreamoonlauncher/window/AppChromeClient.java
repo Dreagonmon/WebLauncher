@@ -7,13 +7,9 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 
-import androidx.annotation.Nullable;
-
 import top.dreagonmon.app.dreamoonlauncher.MainActivity;
-import top.dreagonmon.app.dreamoonlauncher.control.ActivityResultCallback;
 
 public class AppChromeClient extends WebChromeClient {
-    private final int REQUEST_PICK_FILE = 0x10;
     private final MainActivity viewContext;
     public AppChromeClient(Context viewContext){
         this.viewContext = (MainActivity) viewContext;
@@ -21,22 +17,9 @@ public class AppChromeClient extends WebChromeClient {
 
     @Override
     public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+        // 现代 Activity Result API：结果由 MainActivity.filePickerLauncher 回调
         Intent filePicker = fileChooserParams.createIntent();
-        viewContext.registerActivityResultCallback(REQUEST_PICK_FILE,new FileChooseCallback(filePathCallback));
-        viewContext.startActivityForResult(filePicker,REQUEST_PICK_FILE);
+        viewContext.launchFilePicker(filePicker, filePathCallback);
         return true;
-    }
-
-    private class FileChooseCallback implements ActivityResultCallback {
-        private final ValueCallback<Uri[]> filePathCallback;
-        public FileChooseCallback(ValueCallback<Uri[]> filePathCallback){
-            this.filePathCallback = filePathCallback;
-        }
-        @Override
-        public void onActivityResult(int resultCode, @Nullable Intent data) {
-            viewContext.removeActivityResultCallback(REQUEST_PICK_FILE);
-            Uri[] result = FileChooserParams.parseResult(resultCode, data);
-            filePathCallback.onReceiveValue(result);
-        }
     }
 }
