@@ -206,7 +206,7 @@ class Launcher {
       return await this.server.getApplicationList();
     }
     const url = `${this.address}app-list-all?t=${new Date().getTime()}`;
-    const resp = await fetch(url);
+    const resp = await fetch(url, { headers: { "X-Requested-With": "WebLauncher" } });
     if (resp.status !== 200) {
       return Promise.reject(new LauncherResponseError("status code not 200!"));
     }
@@ -233,7 +233,7 @@ class Launcher {
       return await this.server.launchApplication(packageName, activity);
     }
     const url = `${this.address}launch?package=${packageName}&activity=${activity}&t=${new Date().getTime()}`;
-    const resp = await fetch(url);
+    const resp = await fetch(url, { headers: { "X-Requested-With": "WebLauncher" } });
     if (resp.status !== 200) {
       return Promise.reject(new LauncherResponseError("status code not 200!"));
     }
@@ -246,7 +246,7 @@ class Launcher {
         return true;
       }
       const mURL = `${this.address}open-webpage?href=${encodeURIComponent(url)}&t=${new Date().getTime()}`;
-      const resp = await fetch(mURL);
+      const resp = await fetch(mURL, { headers: { "X-Requested-With": "WebLauncher" } });
       if (resp.status !== 200) {
         return Promise.reject(new LauncherResponseError("status code not 200!"));
       }
@@ -258,7 +258,7 @@ class Launcher {
       return await this.server.requestPermission(name);
     }
     const url = `${this.address}request-permission?name=${name}&t=${new Date().getTime()}`;
-    const resp = await fetch(url);
+    const resp = await fetch(url, { headers: { "X-Requested-With": "WebLauncher" } });
     if (resp.status !== 200) {
       return Promise.reject(new LauncherResponseError("status code not 200!"));
     }

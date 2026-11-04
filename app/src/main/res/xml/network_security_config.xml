@@ -6,8 +6,11 @@
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">127.0.0.1</domain>
         <domain includeSubdomains="true">localhost</domain>
-<!--        <trust-anchors>-->
-<!--            <certificates src="@raw/server" />-->
-<!--        </trust-anchors>-->
+        <!-- 把自签证书加入信任锚：Service Worker/Worker 的 fetch 走平台网络栈，
+             不吃 onReceivedSslError 的 proceed()，只认这里声明的 trust-anchors -->
+        <trust-anchors>
+            <certificates src="@raw/server" />
+            <certificates src="system" />
+        </trust-anchors>
     </domain-config>
 </network-security-config>

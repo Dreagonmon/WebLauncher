@@ -15,9 +15,35 @@
       let activity = img.getAttribute("data-activity");
       api.launchApplication(packageName, activity);
     }
+    function showDiag(text) {
+      let d = document.getElementById("diag");
+      if (!d) {
+        d = document.createElement("pre");
+        d.id = "diag";
+        d.style.cssText = "color:#b00;white-space:pre-wrap;word-break:break-all;font-size:12px;";
+        document.body.appendChild(d);
+      }
+      d.textContent += text + "\n";
+    }
     window.onload = async function () {
-      let grant = await api.requestPermission(api.PERMISSION_LAUNCHER);
-      let apps = await api.getApplicationList();
+      showDiag("page origin: " + window.location.origin + " proto: " + window.location.protocol);
+      showDiag("api address: " + api.address);
+      let grant;
+      try {
+        grant = await api.requestPermission(api.PERMISSION_LAUNCHER);
+        showDiag("requestPermission -> " + grant);
+      } catch (e) {
+        showDiag("requestPermission FAILED: " + (e && e.message ? e.message : e));
+        return;
+      }
+      let apps;
+      try {
+        apps = await api.getApplicationList();
+        showDiag("appList -> " + apps.length + " apps");
+      } catch (e) {
+        showDiag("getApplicationList FAILED: " + (e && e.message ? e.message : e));
+        return;
+      }
       for (let i in apps) {
         let appinfo = apps[i];
         let img = document.createElement("img");
