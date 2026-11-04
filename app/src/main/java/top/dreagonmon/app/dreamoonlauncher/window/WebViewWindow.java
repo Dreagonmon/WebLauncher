@@ -28,13 +28,16 @@ public class WebViewWindow {
         // Enable Image and JavaScript
         WebSettings setting = web.getSettings();
         setting.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        setting.setBlockNetworkImage(false);
         setting.setLoadsImagesAutomatically(true);
         setting.setJavaScriptEnabled(true);
         setting.setJavaScriptCanOpenWindowsAutomatically(true);
         setting.setSupportMultipleWindows(true);
         setting.setDomStorageEnabled(true);
-        setting.setDatabaseEnabled(true);
+        // file:// 页面（默认桌面）fetch https://127.0.0.1 的本地 API 属于跨域，
+        // WebView 默认禁止 file 页面发起这种请求，会导致 launcher API 请求
+        // 根本发不出去（权限弹窗自然不出现）。放开 file 页面的跨域访问。
+        setting.setAllowFileAccessFromFileURLs(true);
+        setting.setAllowUniversalAccessFromFileURLs(true);
         // Set User Agent
         String ua = setting.getUserAgentString();
         ua = String.format("%1$s WebLauncher/%2$s (port %3$s)",
@@ -63,5 +66,9 @@ public class WebViewWindow {
     public void goBack() {
         if (web.canGoBack())
             web.goBack();
+    }
+
+    public boolean canGoBack() {
+        return web.canGoBack();
     }
 }
