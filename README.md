@@ -99,17 +99,22 @@ Ask the user to grant permission `launcher` to the calling origin.
 Headers:  X-Requested-With: WebLauncher
 ```
 
-List launchable applications. Requires permission + header.
+List launchable applications across the current user and all accessible
+profiles (work profile, MIUI app clones). Requires permission + header.
 
 `200` → `application/json`:
 
 ```json
 [
-  { "name": "Firefox", "package": "org.mozilla.firefox", "activity": "org.mozilla.firefox.App" }
+  { "name": "Firefox", "package": "org.mozilla.firefox", "activity": "org.mozilla.firefox.App", "user": "0" }
 ]
 ```
 
-### `GET /api/icon?package=<pkg>&activity=<act>&size=<px>&token=<token>`
+`user` is the Android user's **serial number** as a string (`"0"` is the
+owner user; profiles such as work profiles or clones have their own
+serials). Pass it back to `launch` / `icon` to target that profile.
+
+### `GET /api/icon?package=<pkg>&activity=<act>&size=<px>&token=<token>[&user=<serial>]`
 
 Rendered launcher icon as PNG. Requires the `token` from
 `request-permission` (no header check — safe for `<img src>`).
@@ -120,6 +125,7 @@ Rendered launcher icon as PNG. Requires the `token` from
 | `activity` | yes | activity name |
 | `size` | no | pixel size, default `128` |
 | `token` | yes | from `request-permission` |
+| `user` | no | user serial from `app-list-all`; profile icons carry a work badge |
 
 `403` if the token is missing/invalid; `404` if the icon cannot be resolved.
 
@@ -127,12 +133,30 @@ Rendered launcher icon as PNG. Requires the `token` from
 ```
 Headers:  X-Requested-With: WebLauncher
           Content-Type: application/json
-Body:     {"package": "...", "activity": "..."}
+Body:     {"package": "...", "activity": "...", "user": "..."}   // user optional
 ```
 
-Start an activity (launched the same way a real home screen does:
-`ACTION_MAIN` + `CATEGORY_LAUNCHER` + `NEW_TASK`). Requires permission +
-header. `200` on success, `500` if the system refused to start it.
+Start an activity via `LauncherApps.startMainActivity` (the same path a
+real home screen uses), on the profile given by `user` (default: current
+user). Requires permission + header. `200` on success; `500` with the
+failure reason as body if the system refused to start it.
+
+### `GET /api/events?token=<token>`
+```
+Response: text/event-stream (Server-Sent Events)
+```
+
+Live event stream over a single long-lived connection. Requires the
+`token` as a query parameter (EventSource cannot send custom headers).
+Each event is `event: <name>` + `data: <json>`; a `: ping` comment is
+sent every 15 s as keep-alive. Currently defined events:
+
+| Event | Payload | When |
+|---|---|---|
+| `apps-changed` | `{"reason": "..."}` | packages added/removed/changed on any visible user (debounced 1 s) |
+
+Future events reuse the same connection. `EventSource` reconnects
+automatically on drop.
 
 ### `POST /api/open-webpage`
 ```
@@ -153,6 +177,7 @@ Open a URL in the system browser. Requires permission + header.
 | `icon` | GET | query (incl. `token`) |
 | `launch` | POST | JSON body |
 | `open-webpage` | POST | JSON body |
+| `events` | GET | query `token` (SSE stream) |
 
 ### CORS
 
@@ -163,17 +188,27 @@ public HTTPS pages work in modern Chromium.
 
 ### Known limitations
 
-- Only apps of the current Android user are listed/launchable: **work
-  profile and cloned (dual) apps do not appear**. Full support would need
-  the `LauncherApps` API and a `user` field in the protocol.
+- **Cloned (dual) apps on MIUI/HyperOS**: they appear in the list as
+  profile users and launch via `LauncherApps`, but MIUI injects its own
+  "main app or clone?" chooser for *any* launch of a cloned package —
+  including ours. This is a system-level interceptor with no public
+  bypass; work-profile launches are not affected (they start directly).
+- Adding/removing a profile itself emits no event a normal app can
+  receive (`LauncherApps.Callback.onProfilesChanged` was removed in
+  API 33; `ACTION_USER_ADDED/REMOVED` broadcasts need system
+  permissions). Frontends should also refresh on `visibilitychange` —
+  the app forwards its lifecycle to the WebView
+  (`WebView.onPause/onResume`), so the standard Page Visibility API
+  works inside the built-in WebView.
 - Icons are rendered per request (no cache yet).
 
 ## JavaScript client
 
 [`android-web-launcher`](https://www.npmjs.com/package/android-web-launcher)
 ([source](https://github.com/Dreagonmon/web-launcher)) wraps the whole API,
-including port discovery, the header and token handling, and the POST/JSON
-protocol (use v0.4.0+ for current servers):
+including port discovery, the header and token handling, the POST/JSON
+protocol, the `user` field and the SSE stream (use v0.5.0+ for current
+servers):
 
 ```js
 import { Launcher } from "android-web-launcher";
@@ -181,10 +216,13 @@ import { Launcher } from "android-web-launcher";
 const launcher = new Launcher();               // https://127.0.0.1:10801/api/
 await launcher.requestPermission(launcher.PERMISSION_LAUNCHER);
 const apps = await launcher.getApplicationList();
-for (const app of apps) {
-  img.src = launcher.getApplicationIconSrc(app.package, app.activity);
-  img.onclick = () => launcher.launchApplication(app.package, app.activity);
+for (const app of apps) {                      // app.user: profile serial
+  img.src = launcher.getApplicationIconSrc(app.package, app.activity, 128, app.user);
+  img.onclick = () => launcher.launchApplication(app.package, app.activity, app.user);
 }
+const unsubscribe = launcher.subscribeEvents((name, payload) => {
+  if (name === "apps-changed") refreshAppList();
+});
 ```
 
 A dependency-free copy lives in
