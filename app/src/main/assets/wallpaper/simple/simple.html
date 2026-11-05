@@ -13,7 +13,10 @@
     function launch(img) {
       let packageName = img.getAttribute("data-package");
       let activity = img.getAttribute("data-activity");
-      api.launchApplication(packageName, activity);
+      let user = img.getAttribute("data-user") || "";
+      api.launchApplication(packageName, activity, user).catch((e) => {
+        showDiag("launch FAILED " + packageName + " user=" + user + ": " + (e && e.message ? e.message : e));
+      });
     }
     function showDiag(text) {
       let d = document.getElementById("diag");
@@ -26,6 +29,11 @@
       d.textContent += text + "\n";
     }
     window.onload = async function () {
+      // profile（工作资料/克隆）增删无系统事件可达普通应用：回前台即刷新兜底。
+      // 原生 onPause/onResume 透传给 WebView，页面可收到标准 visibilitychange。
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) location.reload();
+      });
       showDiag("page origin: " + window.location.origin + " proto: " + window.location.protocol);
       showDiag("api address: " + api.address);
       let grant;
@@ -48,22 +56,46 @@
         let appinfo = apps[i];
         let img = document.createElement("img");
         img.loading = "lazy";
-        img.src = api.getApplicationIconSrc(appinfo.package, appinfo.activity, 64);
+        img.src = api.getApplicationIconSrc(appinfo.package, appinfo.activity, 64, appinfo.user);
         img.setAttribute("data-package", appinfo.package);
         img.setAttribute("data-activity", appinfo.activity);
+        img.setAttribute("data-user", appinfo.user || "");
         img.onclick = launch.bind(img, img);
         document.body.appendChild(img);
         let title = document.createElement("div");
-        title.innerText = appinfo.name;
+        title.innerText = appinfo.name + (appinfo.user ? " [user " + appinfo.user + "]" : "");
         document.body.appendChild(title);
         let hr = document.createElement("hr");
         document.body.appendChild(hr);
         let br = document.createElement("br");
         document.body.appendChild(br);
       }
+      // SSE 事件订阅：事件直接打到页面诊断区（手机无控制台）
+      try {
+        api.subscribeEvents(
+          (name, payload) => {
+            showDiag("event: " + name + " " + JSON.stringify(payload || {}));
+          },
+          (s) => { showDiag("events: " + s); }
+        );
+        showDiag("events: subscribing...");
+      } catch (e) {
+        showDiag("subscribeEvents FAILED: " + (e && e.message ? e.message : e));
+      }
     };
     window.openBing = async () => {
       await api.openWebpage("https://cn.bing.com");
+    };
+    window.testEvent = async () => {
+      try {
+        const resp = await fetch(api.address + "test-event", {
+          method: "POST",
+          headers: { "X-Requested-With": "WebLauncher" },
+        });
+        showDiag("test-event -> " + resp.status);
+      } catch (e) {
+        showDiag("test-event FAILED: " + (e && e.message ? e.message : e));
+      }
     };
   </script>
 </head>
@@ -72,6 +104,7 @@
   <h1>Launcher Test</h1>
   <p>&lt;- This is the simple page.</p>
   <a href="#" onclick="openBing()">Open Bing Search in Browser</a><br/><br/>
+  <a href="#" onclick="testEvent()">Send Test Event</a><br/><br/>
   <hr>
   <h2>App List</h2>
   <hr>

@@ -4,6 +4,7 @@ class ApplicationInfo {
   name = "";
   package = "";
   activity = "";
+  user = ""; // 用户 serial number（工作资料/分身），主应用也有值
 }
 class LauncherResponseError extends Error {
   constructor (msg) {
@@ -145,11 +146,42 @@ class MockServer {
     return true;
   };
 
+  /**
+   * 订阅服务端事件（SSE，单连接多事件类型）。
+   * handler(eventType /* 如 "apps-changed" *\/, payload)
+   * 返回取消订阅函数。EventSource 自带断线重连。
+   */
+  subscribeEvents = (handler, statusHandler) => {
+    if (this.server) {
+      return this.server.subscribeEvents(handler);
+    }
+    const es = new EventSource(`${this.address}events?token=${this.token}`);
+    const status = (s) => { if (statusHandler) statusHandler(s); };
+    es.onopen = () => status("open");
+    es.onerror = () => {
+      // readyState: 0 连接中 1 已连接(会自动重连) 2 已关闭
+      status("error readyState=" + es.readyState);
+    };
+    const names = ["apps-changed"]; // 已知事件类型；新事件在服务端加入后在此登记
+    const listeners = names.map((name) => {
+      const fn = (e) => {
+        let data = null;
+        try { data = JSON.parse(e.data); } catch { /* 保留 null */ }
+        handler(name, data);
+      };
+      es.addEventListener(name, fn);
+      return [name, fn];
+    });
+    return () => {
+      for (const [name, fn] of listeners) es.removeEventListener(name, fn);
+      es.close();
+    };
+  };
+
   requestPermission = async (name) => {
     const NAME_MAP = {
       launcher: "Launcher",
-    };
-    if (!["launcher"].includes(name)) {
+    };    if (!["launcher"].includes(name)) {
       console.error("requestPermission: Permission name not support!");
       return Promise.reject(new LauncherResponseError("Permission name not support"));
     }
@@ -163,6 +195,8 @@ class MockServer {
     }
     return Promise.reject(new LauncherResponseError("Permission denided"));
   }
+
+  subscribeEvents = () => () => {};
 }
 
 // launcher api
@@ -217,33 +251,40 @@ class Launcher {
       app.name = item.name;
       app.package = item.package;
       app.activity = item.activity;
+      app.user = item.user == null ? "" : String(item.user);
       return app;
     });
     return appList;
   };
 
-  getApplicationIconSrc = (packageName, activity, size = 128) => {
+  getApplicationIconSrc = (packageName, activity, size = 128, user = "") => {
     if (this.server) {
       return this.server.getApplicationIconSrc(packageName, activity, size);
     }
-    return `${this.address}icon?package=${packageName}&activity=${activity}&size=${size}&token=${this.token}&t=${new Date().getTime()}`;
+    const userQuery = user === "" || user == null ? "" : `&user=${encodeURIComponent(user)}`;
+    return `${this.address}icon?package=${packageName}&activity=${activity}&size=${size}&token=${this.token}${userQuery}&t=${new Date().getTime()}`;
   };
 
-  launchApplication = async (packageName, activity) => {
+  launchApplication = async (packageName, activity, user = "") => {
     if (this.server) {
       return await this.server.launchApplication(packageName, activity);
     }
     const url = `${this.address}launch`;
+    const body = { package: packageName, activity: activity };
+    if (user !== "" && user != null) body.user = String(user);
     const resp = await fetch(url, {
       method: "POST",
       headers: {
         "X-Requested-With": "WebLauncher",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ package: packageName, activity: activity }),
+      body: JSON.stringify(body),
     });
     if (resp.status !== 200) {
-      return Promise.reject(new LauncherResponseError("status code not 200!"));
+      // 服务器 500 的 body 带失败原因（如跨 profile 启动被拒）
+      let detail = "";
+      try { detail = " " + (await resp.text()); } catch { /* ignore */ }
+      return Promise.reject(new LauncherResponseError("status code not 200!" + detail));
     }
     return true;
   };
@@ -267,6 +308,38 @@ class Launcher {
       }
       return true;
     };
+
+  /**
+   * 订阅服务端事件（SSE，单连接多事件类型）。
+   * handler(eventType /* 如 "apps-changed" *\/, payload)
+   * 返回取消订阅函数。EventSource 自带断线重连。
+   */
+  subscribeEvents = (handler, statusHandler) => {
+    if (this.server) {
+      return this.server.subscribeEvents(handler);
+    }
+    const es = new EventSource(`${this.address}events?token=${this.token}`);
+    const status = (s) => { if (statusHandler) statusHandler(s); };
+    es.onopen = () => status("open");
+    es.onerror = () => {
+      // readyState: 0 连接中 1 已连接(会自动重连) 2 已关闭
+      status("error readyState=" + es.readyState);
+    };
+    const names = ["apps-changed"]; // 已知事件类型；新事件在服务端加入后在此登记
+    const listeners = names.map((name) => {
+      const fn = (e) => {
+        let data = null;
+        try { data = JSON.parse(e.data); } catch { /* 保留 null */ }
+        handler(name, data);
+      };
+      es.addEventListener(name, fn);
+      return [name, fn];
+    });
+    return () => {
+      for (const [name, fn] of listeners) es.removeEventListener(name, fn);
+      es.close();
+    };
+  };
 
   requestPermission = async (name) => {
     if (this.server) {
