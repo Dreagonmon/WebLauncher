@@ -6,7 +6,9 @@ local or remote — can become your launcher UI and talk to the device through
 a small HTTP API (list apps, launch them, open webpages).
 
 - **minSdk** 26 (Android 8.0) · **targetSdk** 36
-- Only permission: `INTERNET`
+- Permissions: `INTERNET`, `READ_INSTALLED_APPS` (app-change events),
+  `INTERACT_ACROSS_PROFILES` (granted to home-screen roles; harmless
+  otherwise)
 - No Google services, no tracking, no native binaries
 
 ## How it works
@@ -38,9 +40,9 @@ a small HTTP API (list apps, launch them, open webpages).
 Base URL: `https://127.0.0.1:<port>/api/`
 
 > **Client compatibility:** this protocol (POST + JSON action endpoints,
-> `X-Requested-With` header, icon token) matches
-> **`android-web-launcher` v0.4.0+**. Older client versions speak the legacy
-> GET protocol and will get `405`/`403` from current builds.
+> `X-Requested-With` header, icon token, required `user` field, SSE)
+> matches **`android-web-launcher` v0.5.0+**. Older client versions speak
+> the legacy protocol and will get `405`/`403`/`400` from current builds.
 
 ### Discovering the port
 
@@ -155,7 +157,7 @@ sent every 15 s as keep-alive. Currently defined events:
 
 | Event | Payload | When |
 |---|---|---|
-| `apps-changed` | `{"reason": "..."}` | packages added/removed/changed on any visible user (debounced 1 s) |
+| `apps-changed` | `{"reason": "..."}` | packages added/removed/changed on any visible user, or a profile was added/removed (API 31+); debounced 1 s |
 
 Future events reuse the same connection. `EventSource` reconnects
 automatically on drop.
@@ -180,6 +182,11 @@ Open a URL in the system browser. Requires permission + header.
 | `launch` | POST | JSON body |
 | `open-webpage` | POST | JSON body |
 | `events` | GET | query `token` (SSE stream) |
+| `test-event` | POST | — (diagnostic) |
+
+`test-event` broadcasts a synthetic `apps-changed {"reason":"test"}` to all
+SSE subscribers — handy for debugging the event pipeline from the bundled
+simple page.
 
 ### CORS
 
@@ -195,11 +202,10 @@ public HTTPS pages work in modern Chromium.
   "main app or clone?" chooser for *any* launch of a cloned package —
   including ours. This is a system-level interceptor with no public
   bypass; work-profile launches are not affected (they start directly).
-- Adding/removing a profile itself emits no event a normal app can
-  receive (`LauncherApps.Callback.onProfilesChanged` was removed in
-  API 33; `ACTION_USER_ADDED/REMOVED` broadcasts need system
-  permissions). Frontends should also refresh on `visibilitychange` —
-  the app forwards its lifecycle to the WebView
+- Profile add/remove events rely on `LauncherApps.Callback.onUserConfigChanged`
+  (API 31+); on Android 8–10 they are not delivered (`onProfilesChanged` was
+  removed before a replacement existed). Frontends should also refresh on
+  `visibilitychange` — the app forwards its lifecycle to the WebView
   (`WebView.onPause/onResume`), so the standard Page Visibility API
   works inside the built-in WebView.
 - Icons are rendered per request (no cache yet).
