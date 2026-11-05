@@ -174,6 +174,12 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
                     viewContext.broadcastTestEvent();
                     return RSP_200();
             }
+        }catch (IllegalArgumentException badReq){
+            // missing required field / unparsable body → 400
+            top.dreagonmon.app.dreamoonlauncher.utils.FileLog.write(
+                    viewContext, "bad request " + session.getUri() + ": " + badReq);
+            return Response.newFixedLengthResponse(Status.BAD_REQUEST,
+                    "text/plain", "400 Bad Request: " + badReq.getMessage());
         }catch (Exception e){
             e.printStackTrace();
             top.dreagonmon.app.dreamoonlauncher.utils.FileLog.write(
@@ -264,7 +270,12 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
         }
         String packageName = params.get("package").get(0);
         String activityName = params.get("activity").get(0);
-        String user = params.containsKey("user") ? params.get("user").get(0) : null;
+        // user（serial）必填：图标按用户解析，缺省易被当成主用户误用
+        if (!params.containsKey("user")){
+            return Response.newFixedLengthResponse(Status.BAD_REQUEST,
+                    "text/plain", "400 Bad Request: missing user");
+        }
+        String user = params.get("user").get(0);
         int size;
         if (params.containsKey("size")){
             size = Integer.parseInt(params.get("size").get(0));
@@ -293,7 +304,7 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
         JSONObject body = jsonBody(session);
         String packageName = jsonStr(body, "package");
         String activityName = jsonStr(body, "activity");
-        String user = body.optString("user", null); // 可选：serial number
+        String user = jsonStr(body, "user"); // 必填：用户 serial
         String err = control.launchApplication(packageName, activityName, user);
         if (err != null){
             // 失败原因回给页面显示（手机无控制台）

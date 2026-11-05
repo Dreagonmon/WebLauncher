@@ -257,21 +257,25 @@ class Launcher {
     return appList;
   };
 
-  getApplicationIconSrc = (packageName, activity, size = 128, user = "") => {
+  getApplicationIconSrc = (packageName, activity, size = 128, user) => {
     if (this.server) {
       return this.server.getApplicationIconSrc(packageName, activity, size);
     }
-    const userQuery = user === "" || user == null ? "" : `&user=${encodeURIComponent(user)}`;
-    return `${this.address}icon?package=${packageName}&activity=${activity}&size=${size}&token=${this.token}${userQuery}&t=${new Date().getTime()}`;
+    if (user == null || user === "") {
+      throw new LauncherResponseError("getApplicationIconSrc: user is required");
+    }
+    return `${this.address}icon?package=${packageName}&activity=${activity}&size=${size}&token=${this.token}&user=${encodeURIComponent(user)}&t=${new Date().getTime()}`;
   };
 
-  launchApplication = async (packageName, activity, user = "") => {
+  launchApplication = async (packageName, activity, user) => {
     if (this.server) {
       return await this.server.launchApplication(packageName, activity);
     }
+    if (user == null || user === "") {
+      return Promise.reject(new LauncherResponseError("launchApplication: user is required"));
+    }
     const url = `${this.address}launch`;
-    const body = { package: packageName, activity: activity };
-    if (user !== "" && user != null) body.user = String(user);
+    const body = { package: packageName, activity: activity, user: String(user) };
     const resp = await fetch(url, {
       method: "POST",
       headers: {

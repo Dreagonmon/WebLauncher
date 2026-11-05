@@ -114,7 +114,7 @@ profiles (work profile, MIUI app clones). Requires permission + header.
 owner user; profiles such as work profiles or clones have their own
 serials). Pass it back to `launch` / `icon` to target that profile.
 
-### `GET /api/icon?package=<pkg>&activity=<act>&size=<px>&token=<token>[&user=<serial>]`
+### `GET /api/icon?package=<pkg>&activity=<act>&user=<serial>&size=<px>&token=<token>`
 
 Rendered launcher icon as PNG. Requires the `token` from
 `request-permission` (no header check — safe for `<img src>`).
@@ -123,23 +123,25 @@ Rendered launcher icon as PNG. Requires the `token` from
 |---|---|---|
 | `package` | yes | package name |
 | `activity` | yes | activity name |
+| `user` | yes | user serial from `app-list-all`; profile icons carry a work badge |
 | `size` | no | pixel size, default `128` |
 | `token` | yes | from `request-permission` |
-| `user` | no | user serial from `app-list-all`; profile icons carry a work badge |
 
-`403` if the token is missing/invalid; `404` if the icon cannot be resolved.
+`400` if `user` is missing; `403` if the token is missing/invalid; `404`
+if the icon cannot be resolved.
 
 ### `POST /api/launch`
 ```
 Headers:  X-Requested-With: WebLauncher
           Content-Type: application/json
-Body:     {"package": "...", "activity": "...", "user": "..."}   // user optional
+Body:     {"package": "...", "activity": "...", "user": "..."}
 ```
 
 Start an activity via `LauncherApps.startMainActivity` (the same path a
-real home screen uses), on the profile given by `user` (default: current
-user). Requires permission + header. `200` on success; `500` with the
-failure reason as body if the system refused to start it.
+real home screen uses), on the profile given by `user` (user serial from
+`app-list-all`; required). Requires permission + header. `200` on
+success; `400` if `user` is missing; `500` with the failure reason as
+body if the system refused to start it.
 
 ### `GET /api/events?token=<token>`
 ```
