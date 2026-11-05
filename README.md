@@ -239,7 +239,9 @@ A dependency-free copy lives in
 
 Example desktops:
 
-- bundled "simple" page — served at `/index.html` by the app itself
+- bundled pages, served by the app itself: `/index.html` (default portal
+  page) and `/simple.html` (a minimal launcher example built on the
+  bundled client, with SSE diagnostics)
 - [paper-desktop](https://github.com/Dreagonmon/paper-desktop) — a Vue-based
   live wallpaper desktop, published at
   <https://dreagonmon.github.io/paper-desktop/>
@@ -248,11 +250,11 @@ Example desktops:
 
 Swipe from the left edge (a small handle marks the drawer) to access:
 
-- reload / open the default page
 - set the home page URL (must be `https://…`)
 - set the local server port (10000–65535)
-- open the app-list permission settings
-- app list permission management
+- reset all origin permissions
+- open the system app-list permission settings
+- restart the launcher
 
 ## Building
 
