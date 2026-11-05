@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 11+：LauncherApps.registerCallback 需要此权限，否则抛
+         SecurityException（应用变更事件收不到） -->
+    <uses-permission android:name="android.permission.READ_INSTALLED_APPS" />
+    <!-- 跨 profile 枚举/启动（工作资料、分身）。signature 级：普通应用拿不到，
+         但默认桌面（HOME 角色）由系统直接授予 LauncherApps 跨 profile 能力，
+         此声明只是锦上添花。 -->
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_PROFILES" />
 <!--    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />-->
 
     <queries>

@@ -130,6 +130,68 @@ public class MainActivity extends AppCompatActivity {
             }
         };
         getOnBackPressedDispatcher().addCallback(this, backCallback);
+        registerLauncherAppsCallback();
+    }
+
+    /** LauncherApps 回调 → EventBus：安装/卸载/更新/profile 变化时经 SSE 广播 apps-changed。
+     *  包替换会连发多个事件，用主线程 1s 去抖合并成一次。 */
+    private android.content.pm.LauncherApps.Callback launcherAppsCallback;
+    private final Runnable appsChangedBroadcast = () -> {
+        try {
+            org.json.JSONObject payload = new org.json.JSONObject();
+            payload.put("reason", "packages-changed");
+            global.eventBus.broadcast("apps-changed", payload);
+        } catch (Exception ignore) {
+        }
+    };
+    private void registerLauncherAppsCallback() {
+        android.content.pm.LauncherApps la =
+                (android.content.pm.LauncherApps) getSystemService(android.content.Context.LAUNCHER_APPS_SERVICE);
+        if (la == null) return;
+        launcherAppsCallback = new android.content.pm.LauncherApps.Callback() {
+            @Override public void onPackageAdded(String packageName, android.os.UserHandle user) { scheduleAppsChanged("added " + packageName); }
+            @Override public void onPackageChanged(String packageName, android.os.UserHandle user) { scheduleAppsChanged("changed " + packageName); }
+            @Override public void onPackageRemoved(String packageName, android.os.UserHandle user) { scheduleAppsChanged("removed " + packageName); }
+            @Override public void onPackagesAvailable(String[] packageNames, android.os.UserHandle user, boolean replacement) { scheduleAppsChanged("available " + java.util.Arrays.toString(packageNames)); }
+            @Override public void onPackagesUnavailable(String[] packageNames, android.os.UserHandle user, boolean replacement) { scheduleAppsChanged("unavailable " + java.util.Arrays.toString(packageNames)); }
+            /** profile（工作资料/克隆）增删与配置变化：onProfilesChanged 的替代品
+             *  （API 31+；旧系统不会调用，注册时会对每个已有用户各回调一次）。 */
+            @Override public void onUserConfigChanged(android.content.pm.LauncherUserInfo userInfo) {
+                scheduleAppsChanged("user-config serial=" + userInfo.getUserSerialNumber()
+                        + " type=" + userInfo.getUserType());
+            }
+        };
+        try {
+            la.registerCallback(launcherAppsCallback);
+            top.dreagonmon.app.dreamoonlauncher.utils.FileLog.write(
+                    this, "LauncherApps callback registered");
+        } catch (Exception e) {
+            top.dreagonmon.app.dreamoonlauncher.utils.FileLog.write(
+                    this, "LauncherApps registerCallback FAILED", e);
+        }
+        // 注：profile（工作资料/克隆）的增删不派发 LauncherApps 回调
+        // （onProfilesChanged 已从 API 移除），ACTION_USER_ADDED/REMOVED 广播
+        // 又是系统权限，普通应用收不到。前端在页面重新可见时刷新列表即可。
+    }
+    private void scheduleAppsChanged(String reason) {
+        top.dreagonmon.app.dreamoonlauncher.utils.FileLog.write(
+                this, "apps-changed scheduled: " + reason);
+        handler.removeCallbacks(appsChangedBroadcast);
+        handler.postDelayed(appsChangedBroadcast, 1000);
+    }
+
+    /** 测试用：手动广播一次 apps-changed（验证 SSE 投递链路） */
+    public void broadcastTestEvent() {
+        handler.post(() -> {
+            try {
+                org.json.JSONObject payload = new org.json.JSONObject();
+                payload.put("reason", "test");
+                global.eventBus.broadcast("apps-changed", payload);
+                top.dreagonmon.app.dreamoonlauncher.utils.FileLog.write(
+                        this, "test event broadcast, sinks should receive");
+            } catch (Exception ignore) {
+            }
+        });
     }
 
     /** 左边缘抽屉把手：点击唤出抽屉、显示 3 秒后淡出（ onResume 时重新计时）；并声明系统手势排除区避免与返回手势冲突。 */
@@ -219,11 +281,33 @@ public class MainActivity extends AppCompatActivity {
         enterFullScreen();
         // 打开 APP / 从其它 APP 跳转回来：把手显示 3 秒后自动隐藏
         showDrawerHandle();
+        // 生命周期透传：WebView.onResume() 让 Chromium 更新 page visibility，
+        // 页面收到标准 visibilitychange；同时恢复 onPause 暂停的 JS/渲染
+        if (web != null) {
+            web.getWebView().onResume();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        // 暂停 WebView 的 JS/渲染并让页面 visibility 变为 hidden
+        // （页面收到标准 visibilitychange）
+        if (web != null) {
+            web.getWebView().onPause();
+        }
+        super.onPause();
     }
     // 返回键逻辑见 onCreate 中注册的 backCallback（OnBackPressedDispatcher）
 
     @Override
     protected void onDestroy() {
+        if (launcherAppsCallback != null) {
+            try {
+                ((android.content.pm.LauncherApps) getSystemService(android.content.Context.LAUNCHER_APPS_SERVICE))
+                        .unregisterCallback(launcherAppsCallback);
+            } catch (Exception ignore) {
+            }
+        }
         // 唤醒所有还在等对话框的子线程（dismiss 触发 onDismiss → latch 归零）
         synchronized (pendingDialogs) {
             for (android.app.AlertDialog d : pendingDialogs) {

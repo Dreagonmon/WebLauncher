@@ -150,6 +150,9 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
                     return doGetApplicationList(session);
                 case "icon":
                     return doGetApplicationIcon(session);
+                case "events":
+                    // SSE：EventSource 带不了自定义头，与 icon 同样走 token 鉴权
+                    return doGetEvents(session);
                 case "launch":
                     // action endpoints are POST-only: GET-with-side-effect
                     // is unsafe by spec, and POST fetch always carries an
@@ -162,6 +165,14 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
                 case "request-permission":
                     if (!isPost) return RSP_405();
                     return doRequestPermission(session);
+                case "test-event":
+                    // 诊断用：手动广播一次 apps-changed，验证 SSE 投递链路
+                    if (!isPost) return RSP_405();
+                    if (!hasPermission(PermissionControl.PERMISSION_LAUNCHER, session)){
+                        return RSP_403();
+                    }
+                    viewContext.broadcastTestEvent();
+                    return RSP_200();
             }
         }catch (Exception e){
             e.printStackTrace();
@@ -205,6 +216,27 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
     }
 
     /* Launcher Router */
+    private Response doGetEvents(IHTTPSession session) throws Exception {
+        Map<String, List<String>> params = session.getParameters();
+        String token = params.containsKey("token") ? params.get("token").get(0) : null;
+        if (!getPermissionControl().hasToken(PermissionControl.PERMISSION_LAUNCHER, token)){
+            return RSP_403();
+        }
+        SseConnection conn = new SseConnection(
+                this.viewContext.getGlobalStorage().eventBus);
+        conn.start();
+        // chunked 响应：contentLength<0 → Transfer-Encoding: chunked，
+        // 连接由 SseConnection 的写线程持续喂数据；客户端断开时
+        // 写线程检测到 pipe 断裂自行退订清理
+        Response rsp = Response.newChunkedResponse(Status.OK,
+                "text/event-stream; charset=utf-8", conn.input);
+        // 关键：NanoHTTPD 对 text/* 默认套 GZIPOutputStream，deflater 会把
+        // 小事件全缓冲住（不 flush），SSE 事件永远到不了页面——必须关 gzip
+        rsp.setUseGzip(false);
+        rsp.addHeader("Cache-Control", "no-cache");
+        rsp.addHeader("X-Accel-Buffering", "no");
+        return rsp;
+    }
     private Response doGetApplicationList(IHTTPSession session) throws JSONException {
         if (!hasPermission(PermissionControl.PERMISSION_LAUNCHER, session)){
             return RSP_403();
@@ -216,6 +248,7 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
             app.put("name", info.label);
             app.put("package", info.packageName);
             app.put("activity", info.activityName);
+            app.put("user", info.user); // 用户 serial number（工作资料/分身）
             array.put(app);
         }
         String text = array.toString(2);
@@ -231,13 +264,14 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
         }
         String packageName = params.get("package").get(0);
         String activityName = params.get("activity").get(0);
+        String user = params.containsKey("user") ? params.get("user").get(0) : null;
         int size;
         if (params.containsKey("size")){
             size = Integer.parseInt(params.get("size").get(0));
         }else{
             size = ICON_SIZE;
         }
-        Drawable dw = control.getActivityIcon(packageName, activityName);
+        Drawable dw = control.getActivityIcon(packageName, activityName, user);
         if (dw == null){
             // 图标解析失败（个别系统应用 alias/隐藏组件）：404 而非 500
             return RSP_404();
@@ -259,8 +293,12 @@ public class LauncherServerHandler implements IHandler<IHTTPSession, Response> {
         JSONObject body = jsonBody(session);
         String packageName = jsonStr(body, "package");
         String activityName = jsonStr(body, "activity");
-        if (!control.launchApplication(packageName, activityName)){
-            return RSP_500();
+        String user = body.optString("user", null); // 可选：serial number
+        String err = control.launchApplication(packageName, activityName, user);
+        if (err != null){
+            // 失败原因回给页面显示（手机无控制台）
+            return Response.newFixedLengthResponse(Status.INTERNAL_ERROR,
+                    "text/plain", "500 " + err);
         }
         return RSP_200();
     }
